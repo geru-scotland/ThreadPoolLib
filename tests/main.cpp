@@ -21,10 +21,23 @@
 #include <iostream>
 #include "ThreadPool.h"
 
-#define THREADS 16
+#ifdef DEBUG
+#define MAX_TASK_TESTS 500
+#endif
+
+void foo(){
+    std::cout << "\n My Task, thread id: "<< std::this_thread::get_id() <<" \n";
+}
 
 int main() {
+
+#ifdef DEBUG
     ThreadPool tpl(std::thread::hardware_concurrency());
+
+    for(int i = 0; i <= MAX_TASK_TESTS; i++){
+        tpl.AddTask(foo);
+    }
+#endif
 
     return 0;
 }

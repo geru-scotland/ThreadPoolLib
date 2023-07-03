@@ -22,20 +22,17 @@
 #include <iostream>
 #include "ThreadPool.h"
 
-ThreadPool::ThreadPool(uint8_t num) :  threadNum_(static_cast<uint8_t>(num)) {
-    printf("Thread Pool starting with %i", threadNum_);
 
+ThreadPool::ThreadPool(uint8_t num) : poolSize_(static_cast<uint8_t>(num)) {
     /*
-     *   Create the thread pool
+     *   Initialize the thread pool
      *
-     * - emplace_back instead of push_back in order to avoid unnecessary copies.
-     *   This will build the object directly in the vector's allocated memory.
+     * - Use emplace_back instead of push_back to avoid unnecessary copies.
+     *   This directly constructs the thread object in the vector's memory.
      *
-     * - The usual std::thread(&ThreadPool::ExecuteTask, this) would be redundant
-     *   as the type of the vector is std::thread, emplace_back will create a thread
-     *   with these arguments.
+     * - A thread is created with the thread function and the 'this' pointer as arguments.
      */
-    for(int i = 0; i < threadNum_; i++) {
+    for(int i = 0; i < poolSize_; i++) {
         pool_.emplace_back(&ThreadPool::ExecuteTask, this);
     }
 }
@@ -45,20 +42,33 @@ ThreadPool::~ThreadPool() {
 }
 
 /**
- * In order to avoid zombie threads, we need to perform a join for
- * each of them, it will free its resources.
- * Note: we need a reference to the real thread object, we need
- * that specific thread to join.
- * (Nonetheless, the compiler will not allow us to copy a thread object)
+ * Properly stops all the threads in the pool before freeing resources.
+ *
+ * Joining is mandatory for every thread to avoid zombie threads and resource leaks.
+ * Note: It's essential to wait for each specific thread's execution to finish before freeing its resources.
  */
 void ThreadPool::StopPool() {
+    poolActive_ = false;
     for(std::thread& thread : pool_){
         if(thread.joinable())
             thread.join();
     }
 }
 
+/**
+ * Threads execute tasks from the queue while the pool is active.
+ *
+ * If tasks are available in the queue, a thread will pop a task,
+ * execute it and go back to waiting for the next task.
+ */
 void ThreadPool::ExecuteTask() {
-
-
+    while(poolActive_){
+        LockGuard lock(mutex_);
+        if(!tasks_.empty()){
+            std::function<void()> task;
+            task = tasks_.front();
+            tasks_.pop();
+            task();
+        }
+    }
 }

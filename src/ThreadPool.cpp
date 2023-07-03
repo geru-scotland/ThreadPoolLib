@@ -22,8 +22,7 @@
 #include <iostream>
 #include "ThreadPool.h"
 
-ThreadPool::ThreadPool(uint8_t num) {
-    _threadNum = static_cast<uint8_t>(num);
-    printf("Thread Pool starting with %i", _threadNum);
+ThreadPool::ThreadPool(uint8_t num) :  threadNum_(static_cast<uint8_t>(num)){
+    printf("Thread Pool starting with %i", threadNum_);
 }
 

@@ -32,9 +32,9 @@ typedef std::queue<std::function<void()>> TasksQueue;
 class ThreadPool {
 
 private:
-    uint8_t _threadNum;
-    ThreadPoolVector _pool;
-    TasksQueue _tasks;
+    uint8_t threadNum_;
+    ThreadPoolVector pool_;
+    TasksQueue tasks_;
 
 public:
     ThreadPool(uint8_t num);

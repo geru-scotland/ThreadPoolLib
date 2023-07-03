@@ -1,5 +1,5 @@
 /*
- * This file is part of the ThreadPool project.
+ * This file is part of the ThreadPoolLib project.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -24,7 +24,7 @@
 #define THREADS 16
 
 int main() {
-    ThreadPool tpl(THREADS);
+    ThreadPool tpl(std::thread::hardware_concurrency());
 
     return 0;
 }

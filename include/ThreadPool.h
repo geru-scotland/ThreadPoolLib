@@ -1,5 +1,5 @@
 /*
- * This file is part of the ThreadPool project.
+ * This file is part of the ThreadPoolLib project.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -25,19 +25,27 @@
 #include <vector>
 #include <queue>
 #include <functional>
-
-typedef std::vector<std::thread> ThreadPoolVector;
-typedef std::queue<std::function<void()>> TasksQueue;
+#include <mutex>
+#include <atomic>
 
 class ThreadPool {
 
 private:
+    typedef std::vector<std::thread> ThreadPoolVector;
+    typedef std::queue<std::function<void()>> TasksQueue;
+    typedef std::lock_guard<std::mutex> LockGuard;
+    typedef std::mutex Mutex;
+
     uint8_t threadNum_;
     ThreadPoolVector pool_;
     TasksQueue tasks_;
+    Mutex mutex;
 
 public:
-    ThreadPool(uint8_t num);
+    explicit ThreadPool(uint8_t num);
+    ~ThreadPool();
+    void StopPool();
+    void ExecuteTask();
 };
 
 

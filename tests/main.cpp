@@ -35,7 +35,7 @@ int main() {
     ThreadPool tpl(std::thread::hardware_concurrency());
 
     for(int i = 0; i <= MAX_TASK_TESTS; i++){
-        tpl.AddTask(foo);
+        tpl.AddTask([]() { std::cout << "\n My Task, thread id: "<< std::this_thread::get_id() <<" \n"; });
     }
 #endif
 

@@ -62,13 +62,18 @@ void ThreadPool::StopPool() {
  * execute it and go back to waiting for the next task.
  */
 void ThreadPool::ExecuteTask() {
+    std::function<void()> task;
     while(poolActive_){
-        LockGuard lock(mutex_);
-        if(!tasks_.empty()){
-            std::function<void()> task;
-            task = tasks_.front();
-            tasks_.pop();
+        {
+            LockGuard lock(mutex_);
+            if(!tasks_.empty()){
+                task = tasks_.front();
+                tasks_.pop();
+            }
+        }
+        if(task){
             task();
+            task = std::function<void()>();
         }
     }
 }

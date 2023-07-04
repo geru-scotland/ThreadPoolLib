@@ -21,12 +21,36 @@
 #include <iostream>
 #include "ThreadPool.h"
 
-#ifdef DEBUG
-#define MAX_TASK_TESTS 500
-#endif
-
 void foo(){
-    std::cout << "\n My Task, thread id: "<< std::this_thread::get_id() <<" \n";
+    std::cout << "\n [Task]: foo(), thread id: " << std::this_thread::get_id() << "\n";
+    std::this_thread::sleep_for(std::chrono::seconds(2)); // Simulate a 2 seconds process/delay.
+}
+
+void fooParam(int a, int b){
+    std::cout << "\n [Task]: fooParam(), and my parameters are: " << a << " and "<< b <<" - thread id: " << std::this_thread::get_id() << "\n";
+    std::this_thread::sleep_for(std::chrono::seconds(2)); // Simulate a 2 seconds process/delay.
+}
+
+void fooCallback(){
+    std::cout << "\n [Callback]: fooCallback(), thread id: " << std::this_thread::get_id() << "\n";
+}
+
+int fooResult(){
+    int result = 9;
+    std::cout << "\n [Task]: fooResult(), My result will be: " << result << " - thread id: " << std::this_thread::get_id() << "\n";
+    std::this_thread::sleep_for(std::chrono::seconds(2)); // Simulate a 2 seconds process/delay.
+    return result;
+}
+
+int fooResultAndParam(int a){
+    int result = a * 2;
+    std::cout << "\n [Task]: fooResultAndParam(), My result will be: "<< a << "*2 = "  << result << " - thread id: " << std::this_thread::get_id() << "\n";
+    std::this_thread::sleep_for(std::chrono::seconds(2)); // Simulate a 2 seconds process/delay.
+    return result;
+}
+
+void fooResultCallback(int a){
+    std::cout << "\n [Callback]: fooResultCallback(), Data result: " << a << "  - thread id: " << std::this_thread::get_id() << "\n";
 }
 
 int main() {
@@ -34,9 +58,32 @@ int main() {
 #ifdef DEBUG
     ThreadPool tpl(std::thread::hardware_concurrency());
 
-    for(int i = 0; i <= MAX_TASK_TESTS; i++){
-        tpl.AddTask([]() { std::cout << "\n My Task, thread id: "<< std::this_thread::get_id() <<" \n"; });
-    }
+    /**
+     * Tasks
+     */
+
+    // With a lambda.
+    tpl.AddTask([]() { std::cout << "\n Adding my task with a lambda, thread id: " << std::this_thread::get_id() << "\n"; });
+
+    // Normal task "Fire-and-forget"
+    tpl.AddTask(foo);
+
+    // Normal task,  with parameters.
+    tpl.AddTask(fooParam, 4, 7);
+
+    /**
+     * Tasks + Callbacks
+     */
+
+    // Adding a task with a Callback which will be called after the task is complete.
+    tpl.AddTaskWithCallback(foo, fooCallback);
+
+    // Callback which will receive the task's result.
+    tpl.AddTaskWithCallback(fooResult, fooResultCallback);
+
+    // The task will have some args (9 in the example), the result of it will be sent to the callback
+    tpl.AddTaskWithCallback(fooResultAndParam, fooResultCallback, 9);
+
 #endif
 
     return 0;

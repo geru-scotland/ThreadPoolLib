@@ -73,10 +73,34 @@ public:
      * as it's an rvalue, essentially a temporary or unnamed content in memory. Note that
      * both push and push_back methods copy the argument if it's an lvalue.
      */
-    template<typename Func, typename... Args>
-    void AddTask(Func&& func, Args&&... args){
+    template<typename Function, typename Callback, typename... Args>
+    void AddTaskWithCallback(Function&& func, Callback&& callback, Args&&... args){
+
+        typedef std::invoke_result_t<Function, Args...> ReturnType;
+
+        std::function<void()> wrapper = [function = std::forward<Function>(func),
+                callback = std::forward<Callback>(callback),
+                ...args = std::forward<Args>(args)] ()
+        {
+            if constexpr(std::is_void_v<ReturnType>){
+                function(args...);
+                callback();
+            }
+            else
+                callback(function(args...));
+        };
+        EmplaceTaskImpl(std::move(wrapper));
+    }
+
+    template<typename Function, typename... Args>
+    void AddTask(Function&& func, Args&&... args){
+        EmplaceTaskImpl(std::bind(std::forward<Function>(func), std::forward<Args>(args)...));
+    }
+
+    template<typename Task>
+    void EmplaceTaskImpl(Task&& task){
         LockGuard lock(mutex_);
-        tasks_.emplace(std::bind(std::forward<Func>(func), std::forward<Args>(args)...));
+        tasks_.emplace(std::forward<Task>(task));
     }
 };
 

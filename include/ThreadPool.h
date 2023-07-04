@@ -55,23 +55,19 @@ public:
     void ExecuteTask();
 
     /**
-     * @brief AddTask function template.
+     * @brief AddTaskWithCallback function template.
      *
-     * This function adds tasks to the queue by emplacing them directly
-     * into the queue's memory, bypassing the need for copy construction.
+     * This function template allows the addition of tasks along with associated callbacks
+     * to the task queue. Similar to the AddTask function, it employs perfect forwarding to
+     * preserve the original "value category" of passed arguments, and emplaces them directly
+     * into the task queue.
      *
-     * It employs perfect forwarding, meaning it preserves the original "value category"
-     * (either lvalue or rvalue) of the passed arguments.
+     * In addition to executing the task, this function also manages the execution of a
+     * callback function upon completion of the task.
      *
-     * Optimization note: An alternative approach would be to create a variable (say, a function wrapper),
-     * then convert it to an rvalue using std::move, so it's moved instead of copied:
-     *
-     * 1. FunctionWrapper task = std::bind(...), and then
-     * 2. tasks_.push(std::move(task))
-     *
-     * After the move, the content of the 'task' variable would be in an unspecified state,
-     * as it's an rvalue, essentially a temporary or unnamed content in memory. Note that
-     * both push and push_back methods copy the argument if it's an lvalue.
+     * By using std::invoke_result_t, we ensure that the ReturnType correctly adapts to the
+     * return type of the task function. This approach maintains optimal performance by avoiding
+     * unnecessary copy or move operations.
      */
     template<typename Function, typename Callback, typename... Args>
     void AddTaskWithCallback(Function&& func, Callback&& callback, Args&&... args){
@@ -92,11 +88,37 @@ public:
         EmplaceTaskImpl(std::move(wrapper));
     }
 
+    /**
+     * @brief AddTask function template.
+     *
+     * This function template facilitates the addition of tasks to the task queue. It employs
+     * perfect forwarding, a technique that helps to preserve the original "value category"
+     * of passed arguments.
+     *
+     * By directly emplacing the task into the queue using std::bind and std::forward, it
+     * optimizes performance by bypassing unnecessary copy or move operations.
+     *
+     * The use of std::bind also enhances flexibility, as it allows the function to accept
+     * a variety of callable entities (like function pointers, functors, lambdas) and bind them
+     * with their respective arguments.
+     */
     template<typename Function, typename... Args>
     void AddTask(Function&& func, Args&&... args){
         EmplaceTaskImpl(std::bind(std::forward<Function>(func), std::forward<Args>(args)...));
     }
 
+    /**
+     * @brief EmplaceTaskImpl function template.
+     *
+     * This function template manages the addition of tasks (encapsulated in std::function objects)
+     * into the task queue. It makes use of perfect forwarding to preserve the "value category"
+     * of passed tasks and directly emplaces them into the queue, avoiding unnecessary copy or
+     * move operations.
+     *
+     * The usage of a mutex ensures thread-safety during the task emplacement into the queue. It
+     * guarantees that only one thread can modify the task queue at any given moment, effectively
+     * preventing race conditions.
+     */
     template<typename Task>
     void EmplaceTaskImpl(Task&& task){
         LockGuard lock(mutex_);

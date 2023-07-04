@@ -41,7 +41,6 @@ make
 
 Include `include/ThreadPool.h` and create a `ThreadPool` object by specifying the number of threads you want to use. Then you can add tasks using the `AddTask()` or `AddTaskWithCallback()`functions.
 
-
 ### Adding Tasks
 
 Include `ThreadPool.h` and create a `ThreadPool` object by specifying the number of threads you want to use. Then you can add tasks using the `AddTask` function.

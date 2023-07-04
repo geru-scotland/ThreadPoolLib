@@ -25,7 +25,7 @@ This library is under active development and future enhancements include:
 
 * **Use of `std::unique_lock`:** To provide a finer-grained control over locking and synchronization, the library will be updated to use `std::unique_lock`. This allows more flexibility than the current `std::lock_guard`, as it permits unlocking and re-locking a mutex in the same scope, making it possible to avoid holding a lock during lengthy operations. This will significantly reduce contention and improve scalability and performance.
 
-* **Task Return Values:** Future iterations of ThreadPoolLib will allow tasks to return a value. This will add flexibility and enable the library to handle a wider variety of use-cases.
+* **Thread Metrics and Visualization**: In the interest of providing valuable insights about the efficiency of the tasks and the overall performance of the applications, I am planning to introduce a feature that collects and exposes thread metrics. These metrics will enable users to visualize and analyze the behavior of their thread pools over time using tools such as Grafana and InfluxDB.
 
 ## Building
 

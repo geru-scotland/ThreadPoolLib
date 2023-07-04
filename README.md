@@ -10,6 +10,15 @@ ThreadPoolLib is a minimalist C++ thread pool library, designed with simplicity 
 
 * **Performance**: The library utilizes C++ `std::thread` to create and manage threads. It optimizes the number of threads created based on the number of cores available, ensuring optimal utilization of hardware resources.
 
+### Callbacks and Result Handling
+
+In addition to simply adding and running tasks concurrently, ThreadPoolLib also supports advanced use cases through task callbacks and result handling. Here's what you can do:
+
+- **Task Callbacks**: Add a callback function that will be invoked once a task has completed its execution. This can be useful for handling results, logging, or chaining tasks.
+
+- **Result Handling**: When a task finishes execution, it might return a result. With ThreadPoolLib, you can easily handle these results within the callback function, allowing you to use or store the outcome of the task.
+
+
 ## Future Enhancements
 
 This library is under active development and future enhancements include:
@@ -30,34 +39,88 @@ make
 
 ## Usage
 
-Include `ThreadPool.h` and create a `ThreadPool` object by specifying the number of threads you want to use. Then you can add tasks using the `AddTask` function.
+Include `include/ThreadPool.h` and create a `ThreadPool` object by specifying the number of threads you want to use. Then you can add tasks using the `AddTask()` or `AddTaskWithCallback()`functions.
 
-* **With Lambda**:
+
+## Usage
+
+The updated usage of ThreadPoolLib with the new features would be as follows:
+
+### Adding Tasks
+
+Include `ThreadPool.h` and create a `ThreadPool` object by specifying the number of threads you want to use. Then you can add tasks using the `AddTask` function.
 
 ```cpp
 ThreadPool tpl(std::thread::hardware_concurrency());
-
-tpl.AddTask([]() { std::cout << "\n My Task, thread id: "<< std::this_thread::get_id() <<" \n"; });
 ```
-* ****
+- **With Lambdas**:
 
-Aside from using lambda functions, `AddTask` also supports ordinary functions and functors. This can be handy when you have predefined tasks.
+```cpp
+tpl.AddTask([]() { std::cout << "\n My Task, thread id: " << std::this_thread::get_id() << " \n"; });
+```
 
-First, define your function:
+- **With Regular Functions**:
 
 ```cpp
 void foo() {
-    std::cout << "\n My Task, thread id: "<< std::this_thread::get_id() <<" \n";
+    std::cout << "\n My Task, thread id: " << std::this_thread::get_id() << " \n";
 }
-```
-
-Then pass the pointer to the function to AddTask:
-
-```cpp
-ThreadPool tpl(std::thread::hardware_concurrency());
 
 tpl.AddTask(foo);
 ```
+
+- **With Parameters**:
+
+```cpp
+void fooParam(int a, int b) {
+    std::cout << "\n My Task with parameters, thread id: " << std::this_thread::get_id() << " \n";
+}
+
+tpl.AddTask(fooParam, 4, 7);
+```
+
+### Adding Tasks with Callbacks
+
+- **With regular functions and callback**:
+
+```cpp
+void fooCallback() {
+    std::cout << "\n My Callback, thread id: " << std::this_thread::get_id() << " \n";
+}
+
+tpl.AddTaskWithCallback(foo, fooCallback);
+```
+
+- **With Result Handling**:
+
+```cpp
+int fooResult() {
+    int result = // some operation
+    return result;
+}
+
+void fooResultCallback(int result) {
+    std::cout << "\n Received result: "<< result << " from task, thread id: " << std::this_thread::get_id() <<" \n";
+}
+
+tpl.AddTaskWithCallback(fooResult, fooResultCallback);
+```
+
+- **With Result Handling and Parameters**:
+
+```cpp
+int fooResultAndParam(int x) {
+    int result = // some operation involving x
+return result;
+}
+
+void fooResultCallback(int result) {
+    std::cout << "\n Received result: "<< result <<" from task, thread id: " << std::this_thread::get_id() << " \n";
+}
+
+tpl.AddTaskWithCallback(fooResultAndParam, fooResultCallback, 9);
+```
+
 
 * Note: The testing mode is enabled in the `CMakeLists.txt` file. To use the library without the testing mode, simply comment out the line: 
 ```bash

@@ -40,6 +40,8 @@ ThreadPool::ThreadPool(uint8_t num) : poolSize_(static_cast<uint8_t>(num)) {
 ThreadPool::~ThreadPool() {
     // Don't need to lock mutex here, worst case scenario, we will have an extra iteration
     while(poolActive_){
+        // Todo: change this for a running task check.
+        // Queue can be empty but a task might still be running and we need to wait for it.
         if(tasks_.empty())
             poolActive_ = false;
     }

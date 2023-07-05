@@ -38,6 +38,11 @@ ThreadPool::ThreadPool(uint8_t num) : poolSize_(static_cast<uint8_t>(num)) {
 }
 
 ThreadPool::~ThreadPool() {
+    while(poolActive_){
+        LockGuard lock(mutex_);
+        if(tasks_.empty())
+            poolActive_ = false;
+    }
     this->StopPool();
 }
 
@@ -48,7 +53,6 @@ ThreadPool::~ThreadPool() {
  * Note: It's essential to wait for each specific thread's execution to finish before freeing its resources.
  */
 void ThreadPool::StopPool() {
-    poolActive_ = false;
     for(std::thread& thread : pool_){
         if(thread.joinable())
             thread.join();

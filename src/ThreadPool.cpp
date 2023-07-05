@@ -38,7 +38,6 @@ ThreadPool::ThreadPool(uint8_t num) : poolSize_(static_cast<uint8_t>(num)) {
 }
 
 ThreadPool::~ThreadPool() {
-    int i = 0;
     // Don't need to lock mutex here, worst case scenario, we will have an extra iteration
     while(poolActive_){
         if(tasks_.empty())

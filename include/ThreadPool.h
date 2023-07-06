@@ -27,29 +27,33 @@
 #include <functional>
 #include <mutex>
 #include <atomic>
+#include <exception>
+
+#include "Macros.h"
 
 class ThreadPool {
 
 private:
     typedef std::mutex Mutex;
     typedef std::atomic<bool> AtomicBool;
+    typedef std::condition_variable ConditionVariable;
 
     typedef std::vector<std::thread> ThreadPoolVector;
     typedef std::queue<std::function<void()>> TasksQueue;
-    typedef std::lock_guard<Mutex> LockGuard;
+    typedef std::unique_lock<Mutex> UniqueLock;
 
     uint8_t poolSize_;
     ThreadPoolVector pool_;
     TasksQueue tasks_;
     Mutex mutex_;
     AtomicBool poolActive_ = true;
+    ConditionVariable cv;
 
 public:
     explicit ThreadPool(uint8_t num);
-    ~ThreadPool();
 
     // Ensures all running threads are properly terminated upon the pool's destruction.
-    void StopPool();
+    ~ThreadPool();
 
     // Executes a task. To be run by threads in the pool.
     void ExecuteTask();
@@ -121,8 +125,27 @@ public:
      */
     template<typename Task>
     void EmplaceTaskImpl(Task&& task){
-        LockGuard lock(mutex_);
+        UniqueLock mtxLock(mutex_);
         tasks_.emplace(std::forward<Task>(task));
+        cv.notify_one();
+    }
+
+    /**
+     * @brief Creates a predicate for checking if a container is empty or if a pool is active.
+     *
+     * Returns a lambda function as wrapper of the predicate.
+     */
+    template<typename T, typename V>
+    std::function<bool()> MutexLockPredicate(const T& cont, const V& poolActive){
+        auto wrapper = std::function<bool()>();
+        try {
+             wrapper = [&cont, &poolActive](){
+                return !cont.empty() || !poolActive;
+            };
+        } catch(const std::exception& e){
+            printf("[Exception] %s", e.what());
+        }
+        return std::move(wrapper);
     }
 };
 

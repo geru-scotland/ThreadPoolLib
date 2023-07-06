@@ -22,7 +22,6 @@
 #include <iostream>
 #include "ThreadPool.h"
 
-
 ThreadPool::ThreadPool(uint8_t num) : poolSize_(static_cast<uint8_t>(num)) {
     /*
      *   Initialize the thread pool
@@ -37,24 +36,39 @@ ThreadPool::ThreadPool(uint8_t num) : poolSize_(static_cast<uint8_t>(num)) {
     }
 }
 
+/**
+ * When destroying the object, properly stops all the threads in the pool before
+ * freeing resources.
+ *
+ * Joining is mandatory for every thread to avoid zombie threads and resource leaks.
+ * Note: It's essential to wait for each specific thread's execution to finish before
+ * freeing its resources.
+ */
 ThreadPool::~ThreadPool() {
     // Don't need to lock mutex here, worst case scenario, we will have an extra iteration
     while(poolActive_){
-        // Todo: change this for a running task check.
-        // Queue can be empty but a task might still be running and we need to wait for it.
-        if(tasks_.empty())
-            poolActive_ = false;
+        {
+            if(tasks_.empty()){
+                /**
+                 * Since std::thread::joinable doesn't check this, we need to have in mind a few things:
+                 *
+                 * Before the joining and resource cleaning, we need to wake up all threads.
+                 * std::thread::join waits for the thread's current execution to finish. It will be
+                 * woken up when it gets notified AND the predicate is true. If we try to
+                 * perform the joining on a thread which execution is in constant loop,
+                 * that joining will keep waiting forever, and the object will not be destroyed.
+                 * which will end in the system being frozen.
+                 *
+                 * Note: poolActive needs to be set to false before sending the
+                 * notifications, as it forms part of the condition for the predicate;
+                 * if it is set to true, it shall not wake up, therefore the thread will hang.
+                 */
+                poolActive_ = false;
+                cv.notify_all();
+            }
+        }
     }
-    this->StopPool();
-}
 
-/**
- * Properly stops all the threads in the pool before freeing resources.
- *
- * Joining is mandatory for every thread to avoid zombie threads and resource leaks.
- * Note: It's essential to wait for each specific thread's execution to finish before freeing its resources.
- */
-void ThreadPool::StopPool() {
     for(std::thread& thread : pool_){
         if(thread.joinable())
             thread.join();
@@ -71,15 +85,15 @@ void ThreadPool::ExecuteTask() {
     std::function<void()> task;
     while(poolActive_){
         {
-            LockGuard lock(mutex_);
+            UniqueLock lock(mutex_);
+            cv.wait(lock, MutexLockPredicate(tasks_, poolActive_));
             if(!tasks_.empty()){
-                task = tasks_.front();
+                task = std::move(tasks_.front());
                 tasks_.pop();
+
+                lock.unlock();
+                task();
             }
-        }
-        if(task){
-            task();
-            task = std::function<void()>();
         }
     }
 }

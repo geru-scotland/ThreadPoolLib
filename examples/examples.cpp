@@ -36,9 +36,10 @@ int main() {
 
     // With lambdas
     tpl.AddTask([]() { std::cout << "\n Adding my task with a lambda, thread id: " << std::this_thread::get_id() << "\n"; });
+    tpl.AddTask([]() { std::cout << "\n Adding my task with a lambda, thread id: " << std::this_thread::get_id() << "\n"; });
 
     // If we need the tasks to be methods, we can use a lambda to capture them.
-    tpl.AddTask([&fooObj1, fooObj2]() {
+    tpl.AddTask([&fooObj1, &fooObj2]() {
         printf("Lambda Task %i", fooObj1.MyTask(9));
         fooObj2->MyTask(1399);
         fooObj1.MyCallback(fooObj1.MyTask(4 * 1));

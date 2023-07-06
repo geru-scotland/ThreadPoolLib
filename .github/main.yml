@@ -1,0 +1,30 @@
+name: C++ CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up C++ environment
+        uses: Trass3r/setup-cpp@master
+        with:
+          compiler-version: 'latest'
+          gcc-version: '11'
+
+      - name: Create Build Directory
+        run: mkdir build
+
+      - name: Configure CMake
+        run: cmake -B build
+
+      - name: Build
+        run: cmake --build ./build --config Release
+
+      - name: Test
+        run: ctest -C Release
+        working-directory: ./build

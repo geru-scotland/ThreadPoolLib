@@ -28,6 +28,7 @@
 #include <mutex>
 #include <atomic>
 #include <exception>
+#include <condition_variable>
 
 #include "Macros.h"
 

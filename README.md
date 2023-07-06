@@ -39,7 +39,7 @@ cmake ..
 make
 ```
 
-Include \`include/ThreadPool.h\` and create a \`ThreadPool\` object by specifying the number of threads you want to use. Then you can add tasks using the \`AddTask()\` or \`AddTaskWithCallback()\` functions. The \`Examples\` mentioned here refers to a namespace containing some sample functions and methods.
+Include `include/ThreadPool.h` and create a `ThreadPool` object by specifying the number of threads you want to use. Then you can add tasks using the `AddTask()` or `AddTaskWithCallback()` functions. The `Examples` mentioned here refers to a namespace containing some sample functions and methods.
 
 ```cpp
 ThreadPool tpl(std::thread::hardware_concurrency());

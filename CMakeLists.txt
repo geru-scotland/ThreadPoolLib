@@ -13,7 +13,7 @@ set(SOURCES
         src/ThreadPool.cpp)
 
 set(TEST
-        examples/examples.cpp examples/support/Foo.cpp examples/support/Foo.h)
+        examples/examples.cpp examples/support/Foo.cpp examples/support/Foo.h src/Task.cpp include/Task.h)
 
 # Add static and dynamic libraries
 add_library(thread_pool_lib_static STATIC ${SOURCES})

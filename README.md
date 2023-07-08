@@ -112,6 +112,21 @@ pool.AddTask(std::move(task4));
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG")
 ```
 
+# Docker
+To run this code using Docker, you first need to build the Docker images and then run the container. Here are the necessary steps:
+
+1. First, build the base image with the following command:
+```shell
+docker build -t base-image -f docker/base/Dockerfile .
+```
+2. Then, build the application image with the following command: 
+```shell
+docker build -t threadlibpool-image -f docker/app/Dockerfile .
+```
+3. Finally, run the application in a Docker container with the following command:
+```shell
+docker build -t threadlibpool-image -f docker/app/Dockerfile .
+```
 
 # License
 

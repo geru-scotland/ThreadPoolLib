@@ -3,8 +3,8 @@ project(ThreadPoolLib)
 
 set(CMAKE_CXX_STANDARD 23)
 
-# Enable DEBUG directives in code.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG")
+# Enable DEBUG directives in code. (uncomment next line to enable DEBUG mode)
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG")
 
 include_directories(include
                     examples/support)

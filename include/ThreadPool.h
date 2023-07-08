@@ -106,5 +106,4 @@ public:
     }
 };
 
-
 #endif //THREADPOOLLIB_THREADPOOL_H

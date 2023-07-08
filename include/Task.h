@@ -79,8 +79,8 @@ public:
         status_ = STATUS_DONE;
     }
 
-    void AssociateThread(int threadId){ threadId_ = threadId; }
-    int GetThreadId() const { return threadId_; }
+    void AssociateThread(int threadId) noexcept { threadId_ = threadId; }
+    int GetThreadId() const noexcept { return threadId_; }
 
 private:
     std::function<void()> task_;

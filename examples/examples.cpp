@@ -21,58 +21,70 @@
 #include <iostream>
 #include "ThreadPool.h"
 #include "Foo.h"
+#include "Task.h"
 
 int main() {
 
-#ifdef DEBUG
-    ThreadPool tpl(std::thread::hardware_concurrency());
+    ThreadPool pool(std::thread::hardware_concurrency());
 
+    /**
+     * Some basic usage examples.
+     *
+     * These are merely illustrative, it can be used as one see fit.
+     */
+
+
+    /**
+     * Example 1:
+     * Note: by using std::move(task1) objet value renders undefined
+     * Therefore, the variable task1 should not be used.
+     */
+    Task task1;
+    task1(normalFunction, normalCallback);
+    pool.AddTask(std::move(task1));
+
+    /**
+     * Example 2
+     */
+    Task task2;
+    task2(
+            [](){
+                printf("\n Lambda main function \n");
+            },
+            []() {
+                printf("\n Lambda callback \n");
+            }
+    );
+
+    pool.AddTask(std::move(task2));
+
+
+    /**
+     * Example 3
+     */
+    std::shared_ptr<Task> task3 = std::make_shared<Task>();
+    (*task3)(normalFunction, normalCallback);
+    pool.AddTask((*task3));
+
+
+    /**
+     * Example 4
+     */
     Examples::Foo fooObj1;
     auto fooObj2 = std::make_shared<Examples::Foo>();
 
-    /**
-     * Tasks
-     */
+    Task task4;
+    task4(
+            [&fooObj1, &fooObj2]() {
+                printf("Lambda Task %i", fooObj1.MyTask(9));
+                fooObj2->MyTask(1399);
+            },
+            [&fooObj1](){
+                fooObj1.MyCallback(fooObj1.MyTask(4 * 2));
+            }
+    );
 
-    // With lambdas
-    tpl.AddTask([]() { std::cout << "\n Adding my task with a lambda, thread id: " << std::this_thread::get_id() << "\n"; });
-    tpl.AddTask([]() { std::cout << "\n Adding my task with a lambda, thread id: " << std::this_thread::get_id() << "\n"; });
-
-    // If we need the tasks to be methods, we can use a lambda to capture them.
-    tpl.AddTask([&fooObj1, &fooObj2]() {
-        printf("Lambda Task %i", fooObj1.MyTask(9));
-        fooObj2->MyTask(1399);
-        fooObj1.MyCallback(fooObj1.MyTask(4 * 1));
-    });
-
-    // Normal task "Fire-and-forget"
-    tpl.AddTask(normalFunction);
-
-    // Normal task "Fire-and-forget", foo function from Examples namespace.
-    tpl.AddTask(Examples::foo);
-
-    // Normal task,  with parameters.
-    tpl.AddTask(Examples::fooParam, 4, 7);
-
-    // Static method as a task,  with parameters.
-    tpl.AddTask(Examples::Foo::MyStaticTask, 26);
-
-    /**
-     * Tasks + Callbacks
-     */
-
-    tpl.AddTaskWithCallback(normalFunction, normalCallback);
-
-    // Adding a task with a Callback which will be called after the task is complete.
-    tpl.AddTaskWithCallback(Examples::foo, Examples::fooCallback);
-
-    // Callback which will receive the task's result.
-    tpl.AddTaskWithCallback(Examples::fooResult, Examples::fooResultCallback);
-
-    // The task will have some args (9 in the example), the result of it will be sent to the callback
-    tpl.AddTaskWithCallback(Examples::fooResultAndParam, Examples::fooResultCallback, 9);
-
-#endif
+    pool.AddTask(std::move(task4));
 
     return 0;
 }

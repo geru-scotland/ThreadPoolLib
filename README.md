@@ -17,7 +17,7 @@ ThreadPoolLib is a minimalist C++ thread pool library, designed with simplicity 
 
 ### Callbacks and Result Handling
 
-In addition to simply adding and running tasks concurrently, ThreadPoolLib also supports advanced use cases through task callbacks and result handling. Here's what you can do:
+Instead of simply adding and running tasks concurrently, ThreadPoolLib supports advanced use cases through task callbacks and result handling. Here's what you can do:
 
 - **Task Callbacks**: Add a callback function that will be invoked once a task has completed its execution. This can be useful for handling results, logging, or chaining tasks.
 
@@ -28,6 +28,15 @@ In addition to simply adding and running tasks concurrently, ThreadPoolLib also 
 This library is under active development and future enhancements include:
 
 * **Thread Metrics and Visualization**: In the interest of providing valuable insights about the efficiency of the tasks and the overall performance of the applications, I am planning to introduce a feature that collects and exposes thread metrics. These metrics will enable users to visualize and analyze the behavior of their thread pools over time using tools such as Grafana and InfluxDB.
+* **Task dependency**: (suggested by [@tugrul512bit](https://github.com/tugrul512bit) [here](https://github.com/geru-scotland/ThreadPoolLib/issues/4) It will consist in creating dependencies between tasks, so one task can not be consumed until all of its dependencies are resolved, generating this way graphs of tasks, such as:
+
+```
+task 1 <--- (task 2 + task 3)
+ |
+ |
+ V 
+task 4 + task 5 ----> task 6
+```
 
 ## Building
 
@@ -46,61 +55,56 @@ Include `include/ThreadPool.h` and create a `ThreadPool` object by specifying th
 ThreadPool tpl(std::thread::hardware_concurrency());
 ```
 
-- **With Lambdas**:
+- **Example 1**:
 
 ```cpp
-tpl.AddTask([]() { std::cout << "\\n Adding my task with a lambda, thread id: " << std::this_thread::get_id() << "\\n"; });
+Task task1;
+task1(normalFunction, normalCallback);
+pool.AddTask(std::move(task1));
 ```
 
-- **With Regular Functions**:
-
+- **Example 2**:
 ```cpp
-tpl.AddTask(normalFunction);
+Task task2;
+task2(
+        [](){
+            printf("\n Lambda main function \n");
+        },
+        []() {
+            printf("\n Lambda callback \n");
+        }
+);
+
+pool.AddTask(std::move(task2));
+
 ```
 
-- **With Parameters**:
-
+- **Example 3**:
 ```cpp
-tpl.AddTask(Examples::fooParam, 4, 7);
+std::shared_ptr<Task> task3 = std::make_shared<Task>();
+(*task3)(normalFunction, normalCallback);
+pool.AddTask((*task3));
+
 ```
 
-- **Static Methods as Tasks with Parameters**:
-
-```cpp
-tpl.AddTask(Examples::Foo::MyStaticTask, 26);
-```
-
-- **Lambdas Capturing Objects and Methods**:
-
+- **Example 4**:
 ```cpp
 Examples::Foo fooObj1;
 auto fooObj2 = std::make_shared<Examples::Foo>();
 
-tpl.AddTask([&fooObj1, &fooObj2]() {
-        printf("Lambda Task %i", fooObj1.MyTask(9));
-        fooObj2->MyTask(1399);
-        fooObj1.MyCallback(fooObj1.MyTask(4 * 1));
-    });
-```
+Task task4;
+task4(
+        [&fooObj1, &fooObj2]() {
+            printf("Lambda Task %i", fooObj1.MyTask(9));
+            fooObj2->MyTask(1399);
+        },
+        [&fooObj1](){
+            fooObj1.MyCallback(fooObj1.MyTask(4 * 2));
+        }
+);
 
-### Adding Tasks with Callbacks
+pool.AddTask(std::move(task4));
 
-- **Regular Functions with Callbacks**:
-
-```cpp
-tpl.AddTaskWithCallback(normalFunction, normalCallback);
-```
-
-- **Regular Functions with Callbacks that Receive the Task's Result**:
-
-```cpp
-tpl.AddTaskWithCallback(Examples::fooResult, Examples::fooResultCallback);
-```
-
-- **Tasks with Parameters and Callbacks that Receive the Task's Result**:
-
-```cpp
-tpl.AddTaskWithCallback(Examples::fooResultAndParam, Examples::fooResultCallback, 9);
 ```
 
 * Note: The testing mode is enabled in the `CMakeLists.txt` file. To use the library without the testing mode, simply comment out the line: 

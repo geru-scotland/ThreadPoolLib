@@ -31,24 +31,33 @@
 #include <condition_variable>
 
 #include "Macros.h"
+#include "Task.h"
 
 class ThreadPool {
 
 private:
+    /**
+     * Thread-safe.
+     */
     typedef std::mutex Mutex;
     typedef std::atomic<bool> AtomicBool;
     typedef std::condition_variable ConditionVariable;
-
-    typedef std::vector<std::thread> ThreadPoolVector;
-    typedef std::queue<std::function<void()>> TasksQueue;
     typedef std::unique_lock<Mutex> UniqueLock;
+
+    /**
+     * Data structures
+     */
+    typedef std::vector<std::thread> ThreadPoolVector;
+    typedef std::queue<Task> TasksQueue;
+    typedef std::unordered_map<std::thread::id, int> ThreadIdMap;
 
     uint8_t poolSize_;
     ThreadPoolVector pool_;
     TasksQueue tasks_;
     Mutex mutex_;
     AtomicBool poolActive_ = true;
-    ConditionVariable cv;
+    ConditionVariable cv_;
+    ThreadIdMap threadIdMap_;
 
 public:
     explicit ThreadPool(uint8_t num);
@@ -58,59 +67,6 @@ public:
 
     // Executes a task. To be run by threads in the pool.
     void ExecuteTask();
-
-    /**
-     * @brief AddTaskWithCallback function template.
-     *
-     * This function template allows the addition of tasks along with associated callbacks
-     * to the task queue. Similar to the AddTask function, it employs perfect forwarding to
-     * preserve the original "value category" of passed arguments, and emplaces them directly
-     * into the task queue.
-     *
-     * In addition to executing the task, this function also manages the execution of a
-     * callback function upon completion of the task.
-     *
-     * By using std::invoke_result_t, we ensure that the ReturnType correctly adapts to the
-     * return type of the task function. This approach maintains optimal performance by avoiding
-     * unnecessary copy or move operations.
-     */
-    template<typename Function, typename Callback, typename... Args>
-    void AddTaskWithCallback(Function&& func, Callback&& callback, Args&&... args){
-
-        typedef std::invoke_result_t<Function, Args...> ReturnType;
-
-        std::function<void()> wrapper = [function = std::forward<Function>(func),
-                callback = std::forward<Callback>(callback),
-                ...args = std::forward<Args>(args)] ()
-        {
-            if constexpr(std::is_void_v<ReturnType>){
-                function(args...);
-                callback();
-            }
-            else
-                callback(function(args...));
-        };
-        EmplaceTaskImpl(std::move(wrapper));
-    }
-
-    /**
-     * @brief AddTask function template.
-     *
-     * This function template facilitates the addition of tasks to the task queue. It employs
-     * perfect forwarding, a technique that helps to preserve the original "value category"
-     * of passed arguments.
-     *
-     * By directly emplacing the task into the queue using std::bind and std::forward, it
-     * optimizes performance by bypassing unnecessary copy or move operations.
-     *
-     * The use of std::bind also enhances flexibility, as it allows the function to accept
-     * a variety of callable entities (like function pointers, functors, lambdas) and bind them
-     * with their respective arguments.
-     */
-    template<typename Function, typename... Args>
-    void AddTask(Function&& func, Args&&... args){
-        EmplaceTaskImpl(std::bind(std::forward<Function>(func), std::forward<Args>(args)...));
-    }
 
     /**
      * @brief EmplaceTaskImpl function template.
@@ -125,10 +81,10 @@ public:
      * preventing race conditions.
      */
     template<typename Task>
-    void EmplaceTaskImpl(Task&& task){
+    void AddTask(Task&& task){
         UniqueLock mtxLock(mutex_);
         tasks_.emplace(std::forward<Task>(task));
-        cv.notify_one();
+        cv_.notify_one();
     }
 
     /**

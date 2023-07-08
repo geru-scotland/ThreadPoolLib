@@ -18,7 +18,6 @@
  * @author - Geru-Scotland (https://github.com/geru-scotland)
  */
 
-
 #include <iostream>
 #include "ThreadPool.h"
 
@@ -33,6 +32,11 @@ ThreadPool::ThreadPool(uint8_t num) : poolSize_(static_cast<uint8_t>(num)) {
      */
     for(int i = 0; i < poolSize_; i++) {
         pool_.emplace_back(&ThreadPool::ExecuteTask, this);
+        std::thread::id threadId = pool_.back().get_id();
+        threadIdMap_[threadId] = i;
+#ifdef DEBUG
+        std::cout << "Thread id: " << threadId << " associated to: "<< i << std::endl;
+#endif
     }
 }
 
@@ -64,7 +68,7 @@ ThreadPool::~ThreadPool() {
                  * if it is set to true, it shall not wake up, therefore the thread will hang.
                  */
                 poolActive_ = false;
-                cv.notify_all();
+                cv_.notify_all();
             }
         }
     }
@@ -82,17 +86,17 @@ ThreadPool::~ThreadPool() {
  * execute it and go back to waiting for the next task.
  */
 void ThreadPool::ExecuteTask() {
-    std::function<void()> task;
+    Task task;
     while(poolActive_){
         {
             UniqueLock lock(mutex_);
-            cv.wait(lock, MutexLockPredicate(tasks_, poolActive_));
+            cv_.wait(lock, MutexLockPredicate(tasks_, poolActive_));
             if(!tasks_.empty()){
                 task = std::move(tasks_.front());
                 tasks_.pop();
 
                 lock.unlock();
-                task();
+                task.Execute();
             }
         }
     }

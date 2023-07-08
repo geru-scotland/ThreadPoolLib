@@ -29,6 +29,21 @@ class Task {
 public:
     Task() = default;
 
+    /**
+     * @brief () operator overload template.
+     *
+     * This function template allows the addition of tasks along with associated callbacks
+     * to the task queue. It does employ perfect forwarding to preserve the original
+     * "value category" of passed arguments, and emplaces them directly
+     * into the task queue
+     *
+     * In addition to executing the task, this function also manages the execution of a
+     * callback function upon completion of the task.
+     *
+     * By using std::invoke_result_t, we ensure that the ReturnType correctly adapts to the
+     * return type of the task function. This approach maintains optimal performance by avoiding
+     * unnecessary copy or move operations.
+     */
     template<typename Function, typename Callback, typename... Args>
     void operator()(Function&& func, Callback&& callback, Args&& ...args){
 
@@ -47,7 +62,7 @@ public:
         };
     }
 
-    void ExecuteTask(){
+    void Execute(){
         task_();
     }
 

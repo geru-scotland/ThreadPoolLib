@@ -25,15 +25,66 @@
 
 int main() {
 
-#ifdef DEBUG
     ThreadPool pool(std::thread::hardware_concurrency());
 
-    Task task;
-    task(Examples::foo, Examples::fooCallback);
+    /**
+     * Some basic usage examples.
+     *
+     * These are merely illustrative, it can be used as one see fit.
+     */
 
-    pool.AddTask(std::move(task));
 
-#endif
+    /**
+     * Example 1:
+     * Note: by using std::move(task1) objet value renders undefined
+     * Therefore, the variable task1 should not be used.
+     */
+    Task task1;
+    task1(normalFunction, normalCallback);
+    pool.AddTask(std::move(task1));
+
+    /**
+     * Example 2
+     */
+    Task task2;
+    task2(
+            [](){
+                printf("\n Lambda main function \n");
+            },
+            []() {
+                printf("\n Lambda callback \n");
+            }
+    );
+
+    pool.AddTask(std::move(task2));
+
+
+    /**
+     * Example 3
+     */
+    std::shared_ptr<Task> task3 = std::make_shared<Task>();
+    (*task3)(normalFunction, normalCallback);
+    pool.AddTask((*task3));
+
+
+    /**
+     * Example 4
+     */
+    Examples::Foo fooObj1;
+    auto fooObj2 = std::make_shared<Examples::Foo>();
+
+    Task task4;
+    task4(
+            [&fooObj1, &fooObj2]() {
+                printf("Lambda Task %i", fooObj1.MyTask(9));
+                fooObj2->MyTask(1399);
+            },
+            [&fooObj1](){
+                fooObj1.MyCallback(fooObj1.MyTask(4 * 2));
+            }
+    );
+
+    pool.AddTask(std::move(task4));
 
     return 0;
 }

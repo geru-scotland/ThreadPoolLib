@@ -20,12 +20,19 @@
 
 #include <functional>
 #include <iostream>
+#include "Macros.h"
 
 #ifndef THREADPOOLLIB_TASK_H
 #define THREADPOOLLIB_TASK_H
 
+enum TaskStatus {
+    STATUS_PENDING = 0,
+    STATUS_RUNNING = 1,
+    STATUS_DONE = 2
+};
 
 class Task {
+
 public:
     Task() = default;
 
@@ -63,11 +70,22 @@ public:
     }
 
     void Execute(){
-        task_();
+        try{
+            status_ = STATUS_RUNNING;
+            task_();
+        } catch(std::exception& e){
+            TRACE_LOG("[EXCEPTION] %s", e.what());
+        }
+        status_ = STATUS_DONE;
     }
+
+    void AssociateThread(int threadId){ threadId_ = threadId; }
+    int GetThreadId() const { return threadId_; }
 
 private:
     std::function<void()> task_;
+    int threadId_{};
+    TaskStatus status_{};
 };
 
 #endif //THREADPOOLLIB_TASK_H

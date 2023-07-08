@@ -88,13 +88,18 @@ ThreadPool::~ThreadPool() {
 void ThreadPool::ExecuteTask() {
     Task task;
     while(poolActive_){
+#ifdef DEBUG
+        std::thread::id threadId = std::this_thread::get_id();
+        int id = threadIdMap_[threadId];
+        std::cout << "Thread checking queue: " << threadId << " associated to: "<< id << std::endl;
+#endif
         {
             UniqueLock lock(mutex_);
             cv_.wait(lock, MutexLockPredicate(tasks_, poolActive_));
             if(!tasks_.empty()){
                 task = std::move(tasks_.front());
                 tasks_.pop();
-
+                task.AssociateThread(threadIdMap_[std::this_thread::get_id()]);
                 lock.unlock();
                 task.Execute();
             }

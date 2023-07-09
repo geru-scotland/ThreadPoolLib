@@ -56,8 +56,7 @@ public:
 
         typedef std::invoke_result_t<Function, Types...> ReturnType;
 
-        task_ = [&func,
-                &callback, argsTuple] ()
+        task_ = [&func, &callback, argsTuple] ()
         {
             if constexpr(std::is_void_v<ReturnType>){
                 std::apply(func, argsTuple);
@@ -83,8 +82,7 @@ public:
 
         typedef std::invoke_result_t<Function> ReturnType;
 
-        task_ = [&func,
-                &callback] ()
+        task_ = [&func, &callback] ()
         {
             if constexpr(std::is_void_v<ReturnType>){
                 func();

@@ -39,33 +39,91 @@ public:
     /**
      * @brief () operator overload template.
      *
-     * This function template allows the addition of tasks along with associated callbacks
-     * to the task queue. It does employ perfect forwarding to preserve the original
-     * "value category" of passed arguments, and emplaces them directly
-     * into the task queue
+     * This function template enables the invocation of a given function `func` with parameters
+     * provided in `argsTuple`, along with an associated callback `callback` to be executed
+     * after `func` finishes its execution.
      *
-     * In addition to executing the task, this function also manages the execution of a
-     * callback function upon completion of the task.
+     * Using std::invoke_result_t helps deduce the correct return type for the function `func`,
+     * and std::is_void_v helps handle the different cases for the callback execution based on
+     * the return type of the function.
      *
-     * By using std::invoke_result_t, we ensure that the ReturnType correctly adapts to the
-     * return type of the task function. This approach maintains optimal performance by avoiding
-     * unnecessary copy or move operations.
+     * This approach provides flexibility in handling different function signatures, optimizing
+     * performance by avoiding unnecessary copy or move operations, and offers a clean way to
+     * execute a callback function post task execution.
      */
-    template<typename Function, typename Callback, typename... Args>
-    void operator()(Function&& func, Callback&& callback, Args&& ...args){
+    template<typename Function, typename Callback, typename... Types>
+    void operator()(Function&& func, Callback&& callback, const std::tuple<Types...>& argsTuple){
 
-        typedef std::invoke_result_t<Function, Args...> ReturnType;
+        typedef std::invoke_result_t<Function, Types...> ReturnType;
 
-        task_ = [function = std::forward<Function>(func),
-                callback = std::forward<Callback>(callback),
-                ...params = std::forward<Args>(args)] ()
+        task_ = [&func,
+                &callback, argsTuple] ()
         {
             if constexpr(std::is_void_v<ReturnType>){
-                function(params...);
+                std::apply(func, argsTuple);
                 callback();
-            }
-            else
-                callback(function(params...));
+            } else
+                callback(std::apply(func, argsTuple));
+
+        };
+    }
+
+    /**
+     * @brief () operator overload template.
+     *
+     * Similar to the previous function template but tailored to handle cases where no arguments
+     * are passed in a tuple form. It takes a callable object and a callback function, both
+     * perfectly forwarded.
+     *
+     * The callback function will be invoked upon completion of the task, regardless of
+     * the return type of the task function, as evaluated by std::invoke_result_t.
+     */
+    template<typename Function, typename Callback>
+    void operator()(Function&& func, Callback&& callback){
+
+        typedef std::invoke_result_t<Function> ReturnType;
+
+        task_ = [&func,
+                &callback] ()
+        {
+            if constexpr(std::is_void_v<ReturnType>){
+                func();
+                callback();
+            } else
+                callback(func());
+
+        };
+    }
+
+    /**
+     * @brief () operator overload template.
+     *
+     * This function template focuses on situations where the task function and its
+     * arguments are provided, but there's no callback function.
+     *
+     * The tuple of arguments is passed as a const reference, preventing modifications
+     * while avoiding the cost of a full copy. The function and its arguments are then
+     * enqueued as a task without a callback.
+     */
+    template<typename Function, typename... Types>
+    void operator()(Function&& func, const std::tuple<Types...>& argsTuple){
+        task_ = [&func, argsTuple](){
+            std::apply(func, argsTuple);
+        };
+    }
+
+    /**
+     * @brief () operator overload template.
+     *
+     * This version of the function template is specially designed to cater for the cases
+     * where only a task function is provided with no associated callback or tuple arguments.
+     *
+     * Here, the task function  will be directly added to the task queue.
+     */
+    template<typename Function>
+    void operator()(Function&& func){
+        task_ = [&func](){
+            func();
         };
     }
 

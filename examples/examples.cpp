@@ -26,19 +26,16 @@
 
 int main() {
 
-    std::unique_ptr<ThreadPool> pool = std::make_unique<ThreadPool>(std::thread::hardware_concurrency());
-    std::shared_ptr<Task> task1, task2, task3, task4;
     /**
      * Some basic usage examples.
      *
      * These are merely illustrative, it can be used as one see fit.
      */
-
+    std::unique_ptr<ThreadPool> pool = std::make_unique<ThreadPool>(std::thread::hardware_concurrency());
+    std::shared_ptr<Task> task1, task2, task3, task4;
 
     /**
      * Example 1:
-     * Note: by using std::move(task1) object value renders undefined
-     * Therefore, the variable task1 should not be used.
      */
     task1 = pool->CreateTask(normalFunction, normalCallback);
 

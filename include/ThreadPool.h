@@ -59,8 +59,6 @@ private:
     ConditionVariable cv_;
     ThreadIdMap threadIdMap_;
 
-    // TODO: pending tasks (map based on dependencies), task queue and completed tasks hash map
-    // The completed tasks, should be accessible by the user.
     /**
      * @brief EmplaceTaskImpl function template.
      *

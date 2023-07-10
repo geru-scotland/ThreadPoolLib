@@ -49,41 +49,40 @@ make
 ```
 
 ## Basic usage
-Include `include/ThreadPool.h` and create a `ThreadPool` object by specifying the number of threads you want to use. Then you can add tasks using the `AddTask()` or `AddTaskWithCallback()` functions. The `Examples` mentioned here refers to a namespace containing some sample functions and methods.
+Include `include/ThreadPool.h` and create a `ThreadPool` object by specifying the number of threads you want to use. Then you can add tasks using the overloaded `CreateTask()` method from the pool object. The `Examples` mentioned here refers to a namespace containing some trivial sample functions and methods.
 
 ```cpp
-ThreadPool tpl(std::thread::hardware_concurrency());
+// Create a unique pointer to the pool
+std::unique_ptr<ThreadPool> pool = std::make_unique<ThreadPool>(std::thread::hardware_concurrency());
+
+// Shared pointer for the tasks:
+std::shared_ptr<Task> task1, task2, task3, task4;
 ```
 
 - **Example 1**:
 
 ```cpp
-Task task1;
-task1(normalFunction, normalCallback);
-pool.AddTask(std::move(task1));
+task1 = pool->CreateTask(normalFunction, normalCallback);
 ```
 
 - **Example 2**:
 ```cpp
-Task task2;
-task2(
-        [](){
-            printf("\n Lambda main function \n");
-        },
-        []() {
-            printf("\n Lambda callback \n");
-        }
-);
 
-pool.AddTask(std::move(task2));
+task2 = pool->CreateTask(
+    [](){
+        printf("\n Lambda main function \n");
+    },
+    []() {
+        printf("\n Lambda callback \n");
+    }
+);
 
 ```
 
 - **Example 3**:
 ```cpp
-std::shared_ptr<Task> task3 = std::make_shared<Task>();
-(*task3)(normalFunction, normalCallback);
-pool.AddTask((*task3));
+std::tuple<int, int, int> args = std::make_tuple(2, 555, 999);
+task3 = pool->CreateTask(normalFunctionParams, normalCallbackParams, args);
 
 ```
 

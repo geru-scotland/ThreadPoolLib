@@ -129,10 +129,10 @@ public:
         try{
             status_ = STATUS_RUNNING;
             task_();
+            status_ = STATUS_DONE;
         } catch(std::exception& e){
             TRACE_LOG("[EXCEPTION] %s", e.what());
         }
-        status_ = STATUS_DONE;
     }
 
     void AssociateThread(int threadId) noexcept { threadId_ = threadId; }
@@ -143,5 +143,6 @@ private:
     int threadId_{};
     TaskStatus status_{};
 };
+
 
 #endif //THREADPOOLLIB_TASK_H

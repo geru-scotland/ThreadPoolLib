@@ -48,7 +48,7 @@ private:
      * Data structures
      */
     typedef std::vector<std::thread> ThreadPoolVector;
-    typedef std::queue<Task> TasksQueue;
+    typedef std::queue<std::shared_ptr<Task>> TasksQueue;
     typedef std::unordered_map<std::thread::id, int> ThreadIdMap;
 
     uint8_t poolSize_;
@@ -58,18 +58,9 @@ private:
     AtomicBool poolActive_ = true;
     ConditionVariable cv_;
     ThreadIdMap threadIdMap_;
+
     // TODO: pending tasks (map based on dependencies), task queue and completed tasks hash map
     // The completed tasks, should be accessible by the user.
-
-public:
-    explicit ThreadPool(uint8_t num);
-
-    // Ensures all running threads are properly terminated upon the pool's destruction.
-    ~ThreadPool();
-
-    // Executes a task. To be run by threads in the pool.
-    void ExecuteTask();
-
     /**
      * @brief EmplaceTaskImpl function template.
      *
@@ -98,13 +89,106 @@ public:
     std::function<bool()> MutexLockPredicate(const T& cont, const V& poolActive){
         auto wrapper = std::function<bool()>();
         try {
-             wrapper = [&cont, &poolActive](){
+            wrapper = [&cont, &poolActive](){
                 return !cont.empty() || !poolActive;
             };
         } catch(const std::exception& e){
             printf("[Exception] %s", e.what());
         }
         return std::move(wrapper);
+    }
+
+public:
+    explicit ThreadPool(uint8_t num);
+
+    // Ensures all running threads are properly terminated upon the pool's destruction.
+    ~ThreadPool();
+
+    /**
+     * @brief Disable copy and move semantics.
+     *
+     * These declarations prevent generation of default copy and move constructors
+     * and assignment operators. This is to avoid shallow copy issues or potential
+     * resource leaks for objects of the ThreadPool class.
+     */
+    ThreadPool(const ThreadPool&) = delete;
+    ThreadPool& operator=(const ThreadPool&) = delete;
+    ThreadPool(ThreadPool&&) = delete;
+    ThreadPool& operator=(ThreadPool&&) = delete;
+
+    // Executes a task. To be run by threads in the pool.
+    void ExecuteTask();
+
+    /**
+     * @brief Creates a new Task object with the specified function, callback and argument tuple.
+     *
+     * This function template constructs a Task object, which is designed to store a callable and its associated callback.
+     * The function, callback, and arguments are stored in the Task, which is then added to the task queue.
+     *
+     * This allows for flexibility in the callable's signature and the usage of arguments.
+     *
+     * @return A shared pointer to the created Task.
+     */
+    template<typename Function, typename Callback, typename... Types>
+    std::shared_ptr<Task> CreateTask(const Function& func, const Callback& callback, const std::tuple<Types...>& argsTuple){
+        std::shared_ptr<Task> task = std::make_shared<Task>();
+        (*task)(func, callback, argsTuple);
+        AddTask(task);
+        return task;
+    }
+
+    /**
+     * @brief Constructs a new Task object with a given function and callback.
+     *
+     * This function template creates a Task, which encapsulates a callable and a callback to be executed post the callable's execution.
+     * The created Task is added to the task queue.
+     *
+     * This version is intended to be used when the callable doesn't require any arguments.
+     *
+     * @return A shared pointer to the created Task.
+     */
+    template<typename Function, typename Callback>
+    std::shared_ptr<Task> CreateTask(const Function& func, const Callback& callback){
+        std::shared_ptr<Task> task = std::make_shared<Task>();
+        (*task)(func, callback);
+        AddTask(task);
+        return task;
+    }
+
+    /**
+     * @brief Generates a Task object with a specified function and its corresponding argument tuple.
+     *
+     * This function template generates a Task object that encapsulates a callable and its arguments.
+     * The Task is then added to the task queue.
+     *
+     * This variant is meant for scenarios where the callable doesn't have an associated callback but requires arguments.
+     *
+     * @return A shared pointer to the created Task.
+     */
+    template<typename Function, typename... Types>
+    std::shared_ptr<Task> CreateTask(const Function& func, const std::tuple<Types...>& argsTuple){
+        std::shared_ptr<Task> task = std::make_shared<Task>();
+        (*task)(func, argsTuple);
+        AddTask(task);
+        return task;
+    }
+
+    /**
+     * @brief Creates a Task object with the provided function.
+     *
+     * This function template fabricates a Task object that wraps a callable.
+     * The produced Task is then appended to the task queue.
+     *
+     * This version is utilized when the callable neither has a callback nor requires any arguments.
+     *
+     * @return A shared pointer to the created Task.
+     */
+    template<typename Function>
+    std::shared_ptr<Task> CreateTask(const Function& func){
+        std::shared_ptr<Task> task = std::make_shared<Task>();
+        (*task)(func);
+        AddTask(task);
+        return task;
     }
 };
 

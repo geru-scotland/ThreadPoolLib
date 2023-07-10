@@ -75,6 +75,15 @@ void normalFunction(){
     printf("This is a normal function");
 }
 
+int normalFunctionParams(int a, int b, int c){
+    printf("This is a normal function WITH PARAM: %i %i %i ", a, c, b);
+    return a;
+}
+
 void normalCallback(){
-    printf("This is a normal callback");
+    printf("\n This is a normal callback");
+}
+
+void normalCallbackParams(int a){
+    printf("\n This is a normal callback %i", a);
 }

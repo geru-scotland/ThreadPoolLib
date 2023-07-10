@@ -19,14 +19,15 @@
  */
 
 #include <iostream>
+#include <tuple>
 #include "ThreadPool.h"
 #include "Foo.h"
 #include "Task.h"
 
 int main() {
 
-    ThreadPool pool(std::thread::hardware_concurrency());
-
+    std::unique_ptr<ThreadPool> pool = std::make_unique<ThreadPool>(std::thread::hardware_concurrency());
+    std::shared_ptr<Task> task1, task2, task3, task4;
     /**
      * Some basic usage examples.
      *
@@ -36,18 +37,15 @@ int main() {
 
     /**
      * Example 1:
-     * Note: by using std::move(task1) objet value renders undefined
+     * Note: by using std::move(task1) object value renders undefined
      * Therefore, the variable task1 should not be used.
      */
-    Task task1;
-    task1(normalFunction, normalCallback);
-    pool.AddTask(std::move(task1));
+    task1 = pool->CreateTask(normalFunction, normalCallback);
 
     /**
      * Example 2
      */
-    Task task2;
-    task2(
+    task2 = pool->CreateTask(
             [](){
                 printf("\n Lambda main function \n");
             },
@@ -56,15 +54,12 @@ int main() {
             }
     );
 
-    pool.AddTask(std::move(task2));
-
 
     /**
      * Example 3
      */
-    std::shared_ptr<Task> task3 = std::make_shared<Task>();
-    (*task3)(normalFunction, normalCallback);
-    pool.AddTask((*task3));
+    std::tuple<int, int, int> args = std::make_tuple(2, 555, 999);
+    task3 = pool->CreateTask(normalFunctionParams, normalCallbackParams, args);
 
 
     /**
@@ -73,8 +68,7 @@ int main() {
     Examples::Foo fooObj1;
     auto fooObj2 = std::make_shared<Examples::Foo>();
 
-    Task task4;
-    task4(
+    task4 = pool->CreateTask(
             [&fooObj1, &fooObj2]() {
                 printf("Lambda Task %i", fooObj1.MyTask(9));
                 fooObj2->MyTask(1399);
@@ -84,7 +78,10 @@ int main() {
             }
     );
 
-    pool.AddTask(std::move(task4));
+    printf("\n Thread id for task1: %i\n", task1->GetThreadId());
+    printf("\n Thread id for task2: %i\n", task2->GetThreadId());
+    printf("\n Thread id for task3: %i\n", task3->GetThreadId());
+    printf("\n Thread id for task4: %i\n", task4->GetThreadId());
 
     return 0;
 }

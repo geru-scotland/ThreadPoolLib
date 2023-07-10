@@ -45,4 +45,7 @@ namespace Examples {
 void normalFunction();
 void normalCallback();
 
+int normalFunctionParams(int a, int b, int c);
+void normalCallbackParams(int num);
+
 #endif //THREADPOOLLIB_FOO_H

@@ -86,7 +86,7 @@ ThreadPool::~ThreadPool() {
  * execute it and go back to waiting for the next task.
  */
 void ThreadPool::ExecuteTask() {
-    Task task;
+    std::shared_ptr<Task> task;
     while(poolActive_){
 #ifdef DEBUG
         std::thread::id threadId = std::this_thread::get_id();
@@ -99,9 +99,9 @@ void ThreadPool::ExecuteTask() {
             if(!tasks_.empty()){
                 task = std::move(tasks_.front());
                 tasks_.pop();
-                task.AssociateThread(threadIdMap_[std::this_thread::get_id()]);
+                task->AssociateThread(threadIdMap_[std::this_thread::get_id()]);
                 lock.unlock();
-                task.Execute();
+                task->Execute();
             }
         }
     }

@@ -51,13 +51,11 @@ int main() {
             }
     );
 
-
     /**
      * Example 3
      */
     std::tuple<int, int, int> args = std::make_tuple(2, 555, 999);
     task3 = pool->CreateTask(normalFunctionParams, normalCallbackParams, args);
-
 
     /**
      * Example 4
